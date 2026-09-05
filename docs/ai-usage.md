@@ -59,3 +59,34 @@ Starting tasks requested:
   added in the next stage together with the Playwright config.
 - The MCP servers show "Pending approval" until the project `.mcp.json` is approved in an
   interactive Claude Code session.
+
+---
+
+## 2026-09-05 — Session 2: Test runner, lint tooling and browser
+
+### Prompt (user)
+
+Install the dev dependencies `@playwright/test`, `dotenv`, `ajv-formats`, `eslint`,
+`@eslint/js`, `typescript-eslint`, `eslint-plugin-playwright`, and install the Chromium
+browser for Playwright.
+
+### Actions taken (AI)
+
+- **Dependency conflict resolved:** the first install failed with `ERESOLVE` because
+  `typescript-eslint@8.69.0` declares a peer range of `typescript >=4.8.4 <6.1.0` and the
+  project had `typescript@7.0.2`. Rather than forcing the resolution with
+  `--legacy-peer-deps` (which would leave the linter parsing an unsupported compiler),
+  TypeScript was pinned down to `6.0.3`, the newest release inside the supported range.
+- **Installed (dev):** `@playwright/test@1.63.0`, `dotenv@17.4.2`, `ajv-formats@3.0.1`,
+  `eslint@10.10.0`, `@eslint/js@10.0.1`, `typescript-eslint@8.69.0`,
+  `eslint-plugin-playwright@2.11.0`, `typescript@6.0.3`.
+- **Browser:** `npx playwright install chromium` downloaded Chromium and the headless shell
+  (Chrome 153) into the local Playwright cache.
+- **Verification:** `npx tsc --noEmit` still passes with a sample file under TypeScript 6.
+
+### Decisions / notes
+
+- `ajv-formats` was added alongside `ajv` so schemas can use `format` keywords such as
+  `date-time`, `email` and `uri`.
+- ESLint flat config, Playwright config and the folder structure are not created yet; they
+  belong to the next stage.
