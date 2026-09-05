@@ -112,3 +112,39 @@ Create the folders `resource`, `tests/api`, `tests/ui`, `snapshots`, `src/fixtur
   inject page objects; `src/api/schemas` holds JSON schemas validated with Ajv;
   `src/data` holds test data; `src/utils` holds shared helpers; `resource` and `snapshots`
   hold static assets and visual/snapshot baselines.
+
+---
+
+## 2026-09-05 — Session 4: ESLint configuration
+
+### Prompt (user)
+
+Create the `eslint.config.mjs` file.
+
+### Actions taken (AI)
+
+- Wrote `eslint.config.mjs` as an ESLint 10 flat config using `defineConfig` with four layers:
+  1. Global ignores for `node_modules`, `dist`, Playwright reports and caches.
+  2. `@eslint/js` recommended rules for every file, including the config itself.
+  3. Type-aware `typescript-eslint` (`strictTypeChecked` + `stylisticTypeChecked`) for all
+     `.ts` files via `projectService`. Encodes the challenge rules: `no-explicit-any` and the
+     `no-unsafe-*` family as errors, `no-floating-promises` / `no-misused-promises` so every
+     page-object and API call is awaited, explicit return types and member accessibility,
+     `consistent-type-imports`, and a naming convention (camelCase / PascalCase / UPPER_CASE).
+     The Playwright plugin is registered here too so `playwright/no-wait-for-timeout`,
+     `no-networkidle`, `no-element-handle`, `no-force-option` and `no-page-pause` apply to
+     page objects and helpers under `src/`, not only to specs.
+  4. Playwright recommended rules for `tests/**/*.ts` with stricter overrides:
+     `expect-expect`, `prefer-web-first-assertions`, `no-conditional-in-test`,
+     `no-focused-test`, `require-top-level-describe`, and `no-wait-for-timeout` re-raised
+     to an error because the recommended preset only warns.
+- Added npm scripts: `lint`, `lint:fix`, `typecheck`; removed the placeholder `test` script.
+- **Bug found and fixed while verifying:** extending `playwright.configs['flat/recommended']`
+  in the spec block while also registering the plugin in the `.ts` block failed with
+  `Cannot redefine plugin "playwright"` because the bundled config carries a different
+  plugin object. Fixed by spreading the preset's rules and language options instead of
+  extending it.
+- **Verification:** a temporary spec containing `any`, `waitForTimeout`, an un-awaited
+  `page.goto` and `expect(await isVisible())` produced the expected errors; a temporary
+  clean page-object style class passed; `npx eslint .` exits 0 on the repo. Probe files
+  were removed.
