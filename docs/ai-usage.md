@@ -90,3 +90,25 @@ browser for Playwright.
   `date-time`, `email` and `uri`.
 - ESLint flat config, Playwright config and the folder structure are not created yet; they
   belong to the next stage.
+
+---
+
+## 2026-09-05 — Session 3: Folder structure
+
+### Prompt (user)
+
+Create the folders `resource`, `tests/api`, `tests/ui`, `snapshots`, `src/fixtures`,
+`src/api/schemas`, `src/pages/results`, `src/pages/search`, `src/data`, `src/utils`.
+
+### Actions taken (AI)
+
+- Created all ten directories. Each holds a `.gitkeep` placeholder so git tracks the
+  empty folders until real files land; the placeholders can be deleted as content arrives.
+
+### Decisions / notes
+
+- Intended layout: `tests/**` holds only spec files; `src/pages/**` holds page objects
+  grouped by feature (search, results); `src/fixtures` holds the `test.extend` fixtures that
+  inject page objects; `src/api/schemas` holds JSON schemas validated with Ajv;
+  `src/data` holds test data; `src/utils` holds shared helpers; `resource` and `snapshots`
+  hold static assets and visual/snapshot baselines.
