@@ -1,13 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
-import dotenv from 'dotenv';
+import { env } from './src/utils/env';
 
-// Load local overrides from `.env` (git-ignored). CI injects real env vars instead.
-dotenv.config({ quiet: true });
-
-const isCI = Boolean(process.env.CI);
-
-const API_BASE_URL = process.env.API_BASE_URL ?? 'https://www.swapi.tech';
-const UI_BASE_URL = process.env.BASE_URL ?? 'https://www.centraldepasajes.com.ar';
+const isCI = env.isCI;
 
 export default defineConfig({
   fullyParallel: true,
@@ -31,7 +25,7 @@ export default defineConfig({
       testDir: './tests/api',
       retries: 0,
       use: {
-        baseURL: API_BASE_URL,
+        baseURL: env.apiBaseUrl,
         extraHTTPHeaders: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
@@ -44,7 +38,7 @@ export default defineConfig({
       retries: isCI ? 1 : 0,
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: UI_BASE_URL,
+        baseURL: env.uiBaseUrl,
         locale: 'es-AR',
         timezoneId: 'America/Argentina/Buenos_Aires',
         video: 'retain-on-failure',

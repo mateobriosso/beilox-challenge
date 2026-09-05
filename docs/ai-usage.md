@@ -195,3 +195,48 @@ retained on failure.
 - `npx tsc --noEmit` and `npx eslint .` (excluding the example spec) pass.
 - `npx playwright test --list` loads the config and resolves both projects, locally and with
   `CI=1`.
+
+---
+
+## 2026-09-05 — Session 6: Environment file, npm scripts and stage-1 gates
+
+### Prompt (user)
+
+Rename `.env.example` to `.env` with `UI_BASE_URL`, `API_BASE_URL` and
+`API_MAX_RESPONSE_MS=3000`; create npm scripts `test` (both suites), `test:api`, `test:ui`,
+`test:ui:headed`, `lint`, `typecheck`, `report`; finish the first development stage by running
+`npm run lint && npm run typecheck && npx playwright test` all green without tests, and commit
+with the message `chore: playwright scaffolding + ts strict + eslint gates done`, then push.
+
+### Actions taken (AI)
+
+- Removed `.env.example` from git and created a local `.env` with the three requested
+  values. `.env` is git-ignored, so it never reaches GitHub (verified: absent from
+  `git status`).
+- Added `src/utils/env.ts`, a typed accessor (`Env` interface) that loads `dotenv` once and
+  exposes `isCI`, `uiBaseUrl`, `apiBaseUrl` and `apiMaxResponseMs` with sane defaults.
+  Numeric values are validated (positive integer) so a typo in `.env` fails fast with a clear
+  message instead of producing `NaN` in a test. `playwright.config.ts` now reads from this
+  module instead of `process.env` directly, and API tests will use `apiMaxResponseMs` for
+  response-time assertions.
+- npm scripts now: `test` (runs `ui-chromium` and `api` projects), `test:api`, `test:ui`,
+  `test:ui:headed`, `lint`, `typecheck`, `report`. Removed the earlier `test:headed` and
+  `lint:fix` aliases.
+- Deleted the boilerplate `tests/ui/example.spec.ts` so the suite is genuinely empty for the
+  stage gate, and removed the `.gitkeep` from `src/utils` now that it has content.
+
+### Decisions / notes
+
+- The repo no longer carries an env template because the user asked for the rename. A
+  newcomer must create `.env` by hand; the defaults in `src/utils/env.ts` make the suite
+  runnable even without it.
+- `npx playwright test` exits with code 1 and `Error: No tests found` on an empty suite.
+  The stage gate was therefore run as `npx playwright test --pass-with-no-tests`. The flag was
+  deliberately **not** baked into the npm scripts: keeping them strict means a misconfigured
+  `testDir` will fail loudly instead of passing silently once real specs exist.
+
+### Verification
+
+- `npm run lint` → 0 problems.
+- `npm run typecheck` → clean.
+- `npx playwright test --pass-with-no-tests` → exit 0.
