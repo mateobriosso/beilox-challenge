@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets (local only, never commit)
+.env
+.env.*
+!.env.example
+
+# Playwright artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Build output
+dist/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
