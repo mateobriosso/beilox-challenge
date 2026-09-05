@@ -148,3 +148,50 @@ Create the `eslint.config.mjs` file.
   `page.goto` and `expect(await isVisible())` produced the expected errors; a temporary
   clean page-object style class passed; `npx eslint .` exits 0 on the repo. Probe files
   were removed.
+
+---
+
+## 2026-09-05 — Session 5: Playwright configuration
+
+### Prompt (user)
+
+Configure `playwright.config.ts` with two projects, `api` (testDir `./tests/api`, retries 0,
+baseURL `https://www.swapi.tech`, JSON `extraHTTPHeaders`) and `ui-chromium` (testDir
+`./tests/ui`, retries `isCI ? 1 : 0`, baseURL `https://www.centraldepasajes.com.ar`, locale
+`es-AR`, Buenos Aires timezone, video retained on failure), plus global settings:
+`isCI = Boolean(process.env.CI)`, `fullyParallel`, `forbidOnly: isCI`, `workers: isCI ? 2 :
+undefined`, GitHub + HTML reporters on CI and list + HTML locally, trace and screenshot
+retained on failure.
+
+### Actions taken (AI)
+
+- Wrote `playwright.config.ts` exactly to the spec above. `dotenv` loads a local `.env`
+  so `BASE_URL` / `API_BASE_URL` can override the public defaults without code changes;
+  `.env.example` documents both keys with their default values.
+- `ui-chromium` spreads `devices['Desktop Chrome']` before the project overrides so the
+  viewport and user agent follow Playwright's maintained device profile.
+- `snapshotDir` points at the existing `./snapshots` folder.
+- Added npm scripts: `test`, `test:api`, `test:ui`, `test:headed`, `report`.
+- Detected a `npm init playwright` scaffold in the working tree (`.github/workflows/
+  playwright.yml`, extra `.gitignore` entries, `tests/ui/example.spec.ts`). The workflow and
+  ignore rules were committed as-is; the example spec was left uncommitted (see notes).
+
+### Decisions / deviations
+
+- **Timezone id corrected** from `Argentina/Buenos_Aires` to the IANA name
+  `America/Argentina/Buenos_Aires`; Chromium rejects the short form.
+- **Screenshot mode** is `only-on-failure`: the `screenshot` option has no
+  `retain-on-failure` value (that exists only for `trace` and `video`).
+- **`workers`** is applied as a conditional spread (`...(isCI ? { workers: 2 } : {})`)
+  instead of `workers: isCI ? 2 : undefined`, because `exactOptionalPropertyTypes` in
+  `tsconfig.json` rejects an explicit `undefined`. Behaviour is identical: Playwright's
+  default worker count locally, 2 on CI.
+- `tests/ui/example.spec.ts` is stock boilerplate that targets playwright.dev and breaks
+  `npm run lint` (`require-top-level-describe`). It was not deleted because the AI did not
+  create it; the recommendation is to remove it once real specs exist.
+
+### Verification
+
+- `npx tsc --noEmit` and `npx eslint .` (excluding the example spec) pass.
+- `npx playwright test --list` loads the config and resolves both projects, locally and with
+  `CI=1`.
