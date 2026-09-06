@@ -10,8 +10,14 @@ export default defineConfig({
   // `exactOptionalPropertyTypes` forbids an explicit `undefined`.
   ...(isCI ? { workers: 2 } : {}),
   reporter: isCI
-    ? [['github'], ['html', { open: 'never' }]]
-    : [['list'], ['html', { open: 'never' }]],
+  ? [
+      ['github'],
+      ['blob'],
+      ['json', { outputFile: 'test-results/results.json' }],
+      ['junit', { outputFile: 'test-results/junit.xml' }],
+      ['./src/reporters/response-time.reporter.ts'],
+    ]
+  : [['list'], ['html', { open: 'never' }], ['./src/reporters/response-time.reporter.ts']],
   snapshotDir: './snapshots',
 
   use: {
