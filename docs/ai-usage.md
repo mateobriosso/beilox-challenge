@@ -364,3 +364,13 @@ anything in the code that blocks CI. Log, commit, push, trigger with `gh`, repor
 - Workflow YAML parsed with PyYAML and js-yaml; triggers resolved to push, pull_request,
   schedule and workflow_dispatch.
 - Remote run result: see the end of this entry (appended after `gh workflow run`).
+
+### Remote run (appended after `gh workflow run playwright.yml --ref master`)
+
+- Run 34060337853 (`workflow_dispatch`, sha `98bacc5`):
+  https://github.com/mateobriosso/beilox-challenge/actions/runs/34060337853 → **success**,
+  every step green, Playwright summary `27 passed (38.9s)`.
+- Artifacts: `playwright-report` (229 KB, 30 days), `test-results` (12.7 KB, 30 days),
+  `happy-path-json` (7 KB, 90 days).
+- The `push` run for the same sha (34060328943) was cancelled by the per-branch concurrency
+  group as soon as the manual dispatch started, which is the intended behaviour.
