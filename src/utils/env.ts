@@ -15,7 +15,7 @@ export interface Env {
 const DEFAULTS = {
   uiBaseUrl: 'https://www.centraldepasajes.com.ar',
   apiBaseUrl: 'https://www.swapi.tech',
-  apiMaxResponseMs: 3000,
+  apiMaxResponseMs: 8000,
 } as const;
 
 function readString(name: string, fallback: string): string {

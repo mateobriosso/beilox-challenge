@@ -36,6 +36,10 @@ export default defineConfig({
       name: 'ui-chromium',
       testDir: './tests/ui',
       retries: isCI ? 1 : 0,
+      // The public site renders results server-side after a redirect (several seconds),
+      // and a full search walks Select2 + calendar + submit before asserting.
+      timeout: 90_000,
+      expect: { timeout: 20_000 },
       use: {
         ...devices['Desktop Chrome'],
         baseURL: env.uiBaseUrl,

@@ -60,6 +60,8 @@ export default defineConfig(
       '@typescript-eslint/explicit-member-accessibility': ['error', { accessibility: 'explicit' }],
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
+      // Numbers (status codes, durations) are safe and readable inside template literals.
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
@@ -68,9 +70,20 @@ export default defineConfig(
         'error',
         { selector: 'default', format: ['camelCase'], leadingUnderscore: 'allow' },
         { selector: 'variable', modifiers: ['const'], format: ['camelCase', 'UPPER_CASE'] },
+        {
+          selector: 'classProperty',
+          modifiers: ['static', 'readonly'],
+          format: ['camelCase', 'UPPER_CASE'],
+        },
         { selector: 'typeLike', format: ['PascalCase'] },
         { selector: 'enumMember', format: ['PascalCase', 'UPPER_CASE'] },
         { selector: 'objectLiteralProperty', format: null },
+        // Interfaces mirror third-party wire formats (swapi's `total_records`, `_id`, `__v`).
+        {
+          selector: 'typeProperty',
+          format: ['camelCase', 'snake_case'],
+          leadingUnderscore: 'allowSingleOrDouble',
+        },
         { selector: 'import', format: null },
       ],
 
@@ -94,7 +107,8 @@ export default defineConfig(
       ...playwright.configs['flat/recommended'].rules,
       // Re-assert challenge rule at error level (recommended only warns).
       'playwright/no-wait-for-timeout': 'error',
-      'playwright/expect-expect': 'error',
+      // Reusable assertion helpers (`expectStatus`, `results.expectRoute`) count as assertions.
+      'playwright/expect-expect': ['error', { assertFunctionPatterns: ['^expect[A-Z]'] }],
       'playwright/missing-playwright-await': 'error',
       'playwright/prefer-web-first-assertions': 'error',
       'playwright/prefer-to-have-length': 'error',

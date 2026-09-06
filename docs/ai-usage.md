@@ -240,3 +240,81 @@ with the message `chore: playwright scaffolding + ts strict + eslint gates done`
 - `npm run lint` → 0 problems.
 - `npm run typecheck` → clean.
 - `npx playwright test --pass-with-no-tests` → exit 0.
+
+---
+
+## 2026-09-06 — Session 7: UI and API test suites
+
+### Prompt (user)
+
+Implement both parts of the challenge inside the existing Playwright project:
+
+1. **UI:** automate the search on `centraldepasajes.com.ar` covering a valid search, a search
+   with no results, invalid data, and browser-back from the results page; Page Object Model
+   with selectors, actions and assertions separated; strict TypeScript.
+2. **API:** automate `swapi.tech` `/people`, `/planets` and `/films` with at least three tests
+   each (happy path plus 400/404 errors), asserting status, body structure and response time,
+   validating schemas with Ajv, and persisting each happy-path body to a JSON file.
+
+### Actions taken (AI)
+
+- **Exploration first.** Before writing tests the AI probed both targets with throwaway Node
+  scripts: the swapi endpoints for their real status codes and envelopes, and the search form
+  for its widgets (Select2 station pickers, a custom inline calendar, Parsley validation) and
+  the results page markup (`h1.city-names`, `#servicios .card`, the `#modal-alert` "no
+  options" dialog, `FIda`/`CntPas` query parameters).
+- **API layer** (`src/api`): `SwapiClient` wraps `APIRequestContext`, builds paths from a
+  `SwapiResource` union, measures `durationMs` and parses JSON when possible. JSON schemas
+  live in `src/api/schemas` (shared envelope builders in `common.schema.ts`, one file per
+  resource, `additionalProperties: false` everywhere). `src/api/assertions` exposes
+  `expectSuccessfulJson` / `expectNotFound` / `expectBadRequest`, each checking status,
+  content type, time budget and Ajv validation, and narrowing the body type via
+  `asserts response is ApiResponse<T>`. `src/utils/happy-path-store.ts` writes
+  `resource/api/<name>.json` with `{ savedAt, request, status, body }` and only rewrites when
+  the body changed (ignoring the volatile `timestamp`).
+- **API specs** (`tests/api`): 18 tests, six per resource: list, detail by id, empty search,
+  404 for an unknown id, 404 for a non-numeric id (people/films) or a name filter (planets),
+  and 400 for a malformed JSON body.
+- **UI layer** (`src/pages`): `BasePage`, then `search/` and `results/` each split into
+  `*.selectors.ts` (CSS only), `*.page.ts` (actions and locators, web-first waits) and
+  `*.assertions.ts` (expectations phrased in terms of `SearchCriteria`). Test data
+  (`STATIONS`, `POPULAR_ROUTE`, `UNSERVED_ROUTE`, validation messages) is in
+  `src/data/routes.data.ts`; date helpers in `src/utils/dates.ts`. `src/fixtures/ui.fixture.ts`
+  injects `searchPage`, `searchAssertions`, `resultsPage`, `resultsAssertions` via `test.extend`.
+- **UI spec** (`tests/ui/search.spec.ts`): 6 tests grouped as valid search, no results,
+  invalid data (empty form, unknown city, past date) and back navigation.
+- **Config:** `ui-chromium` got `timeout: 90_000` and `expect.timeout: 20_000` because the
+  public site renders results server-side after a redirect. ESLint gained
+  `assertFunctionPatterns: ['^expect[A-Z]']` so assertion helpers satisfy `expect-expect`,
+  `typeProperty` may be `snake_case` with leading underscores (swapi's `total_records`,
+  `_id`, `__v`), static readonly class constants may be `UPPER_CASE`, and numbers are allowed
+  in template literals.
+
+### Decisions / deviations
+
+- **Response-time budget raised from 3000 ms to 8000 ms** (`.env` and the default in
+  `src/utils/env.ts`). Measured latencies from this network were 3.3–4.9 s per call, so 3000 ms
+  would have produced false failures. The value is still an environment variable and can be
+  tightened on a faster network or in CI.
+- **400 scenario.** swapi.tech never answers 400 to bad query strings or ids (`?page=abc`
+  returns 200, `/people/abc` returns 404). The only reproducible 400 is a malformed JSON body,
+  so the suite POSTs `{"name": "Luke"` and asserts the `Bad Request` page. This is documented
+  in `src/data/swapi.data.ts`.
+- **Upstream defect found:** `/planets/:id` 404 responses spell the key `messsage`. The
+  `notFoundSchema` accepts both spellings through `anyOf` and the planets spec asserts on
+  whichever is present, so the behaviour is visible instead of silently tolerated.
+- **Happy-path JSON files** are committed under `resource/api/` as the challenge asks. They
+  include the request and status alongside the body so they can seed future contract checks.
+- **Select2 auto-open:** choosing an origin makes the site open the destination picker on its
+  own; `SearchPage.openStationPicker` only clicks the combobox when its results list is absent,
+  otherwise the click would close it.
+- **Calendar visibility:** `#cdp-calendar-container` has a zero-size box, so the page object
+  anchors on the inner `.date-picker-wrapper`.
+- **Spec titles are in Spanish** to map one-to-one onto the challenge wording in the HTML
+  report; code, comments and commit messages stay in English like the rest of the repo.
+
+### Verification
+
+- `npm run lint` → 0 problems.
+- `npm run typecheck` → clean.
+- `npx playwright test` → 24 passed (18 api, 6 ui-chromium).
