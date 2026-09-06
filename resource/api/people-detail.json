@@ -1,5 +1,5 @@
 {
-  "savedAt": "2026-09-06T17:44:27.170Z",
+  "savedAt": "2026-09-06T23:09:25.673Z",
   "request": {
     "method": "GET",
     "url": "https://www.swapi.tech/api/people/1"
@@ -9,8 +9,8 @@
     "message": "ok",
     "result": {
       "properties": {
-        "created": "2026-09-05T21:13:03.280Z",
-        "edited": "2026-09-05T21:13:03.280Z",
+        "created": "2026-09-06T21:41:33.587Z",
+        "edited": "2026-09-06T21:41:33.587Z",
         "name": "Luke Skywalker",
         "gender": "male",
         "skin_color": "fair",
@@ -42,7 +42,7 @@
       "__v": 4
     },
     "apiVersion": "1.0",
-    "timestamp": "2026-09-06T17:44:27.169Z",
+    "timestamp": "2026-09-06T23:09:25.838Z",
     "support": {
       "contact": "admin@swapi.tech"
     }

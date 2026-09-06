@@ -1,5 +1,5 @@
 {
-  "savedAt": "2026-09-06T17:44:27.270Z",
+  "savedAt": "2026-09-06T23:09:25.707Z",
   "request": {
     "method": "GET",
     "url": "https://www.swapi.tech/api/films/1"
@@ -9,8 +9,8 @@
     "message": "ok",
     "result": {
       "properties": {
-        "created": "2026-09-05T21:13:03.282Z",
-        "edited": "2026-09-05T21:13:03.282Z",
+        "created": "2026-09-06T21:41:33.590Z",
+        "edited": "2026-09-06T21:41:33.590Z",
         "starships": [
           "https://www.swapi.tech/api/starships/2",
           "https://www.swapi.tech/api/starships/3",
@@ -73,7 +73,7 @@
       "__v": 2
     },
     "apiVersion": "1.0",
-    "timestamp": "2026-09-06T17:44:27.262Z",
+    "timestamp": "2026-09-06T23:09:25.846Z",
     "support": {
       "contact": "admin@swapi.tech"
     }

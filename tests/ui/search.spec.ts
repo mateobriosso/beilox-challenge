@@ -76,7 +76,10 @@ test.describe('Búsqueda de pasajes en centraldepasajes.com.ar', () => {
       // with empty origin/destination spans when there are no services, although the
       // `<title>` still names the route. Marked as an expected failure so the suite stays
       // green today and flags the moment the site fixes it.
-      test.fail(true, 'centraldepasajes.com.ar leaves the route heading empty on no-results pages');
+      test.fail(
+        true,
+        'centraldepasajes.com.ar leaves the route heading empty on no-results pages (issue #2)',
+      );
 
       await searchPage.search(unservedTrip);
       await resultsPage.waitForLoaded();

@@ -1,5 +1,5 @@
 {
-  "savedAt": "2026-09-06T17:44:25.808Z",
+  "savedAt": "2026-09-06T23:09:26.280Z",
   "request": {
     "method": "GET",
     "url": "https://www.swapi.tech/api/films"
@@ -10,8 +10,8 @@
     "result": [
       {
         "properties": {
-          "created": "2026-09-05T21:13:03.282Z",
-          "edited": "2026-09-05T21:13:03.282Z",
+          "created": "2026-09-06T21:41:33.590Z",
+          "edited": "2026-09-06T21:41:33.590Z",
           "starships": [
             "https://www.swapi.tech/api/starships/2",
             "https://www.swapi.tech/api/starships/3",
@@ -75,8 +75,8 @@
       },
       {
         "properties": {
-          "created": "2026-09-05T21:13:03.282Z",
-          "edited": "2026-09-05T21:13:03.282Z",
+          "created": "2026-09-06T21:41:33.590Z",
+          "edited": "2026-09-06T21:41:33.590Z",
           "starships": [
             "https://www.swapi.tech/api/starships/3",
             "https://www.swapi.tech/api/starships/10",
@@ -142,8 +142,8 @@
       },
       {
         "properties": {
-          "created": "2026-09-05T21:13:03.282Z",
-          "edited": "2026-09-05T21:13:03.282Z",
+          "created": "2026-09-06T21:41:33.590Z",
+          "edited": "2026-09-06T21:41:33.590Z",
           "starships": [
             "https://www.swapi.tech/api/starships/2",
             "https://www.swapi.tech/api/starships/3",
@@ -223,8 +223,8 @@
       },
       {
         "properties": {
-          "created": "2026-09-05T21:13:03.282Z",
-          "edited": "2026-09-05T21:13:03.282Z",
+          "created": "2026-09-06T21:41:33.590Z",
+          "edited": "2026-09-06T21:41:33.590Z",
           "starships": [
             "https://www.swapi.tech/api/starships/31",
             "https://www.swapi.tech/api/starships/32",
@@ -319,8 +319,8 @@
       },
       {
         "properties": {
-          "created": "2026-09-05T21:13:03.282Z",
-          "edited": "2026-09-05T21:13:03.282Z",
+          "created": "2026-09-06T21:41:33.590Z",
+          "edited": "2026-09-06T21:41:33.590Z",
           "starships": [
             "https://www.swapi.tech/api/starships/21",
             "https://www.swapi.tech/api/starships/32",
@@ -425,8 +425,8 @@
       },
       {
         "properties": {
-          "created": "2026-09-05T21:13:03.282Z",
-          "edited": "2026-09-05T21:13:03.282Z",
+          "created": "2026-09-06T21:41:33.590Z",
+          "edited": "2026-09-06T21:41:33.590Z",
           "starships": [
             "https://www.swapi.tech/api/starships/2",
             "https://www.swapi.tech/api/starships/32",
@@ -544,7 +544,7 @@
       }
     ],
     "apiVersion": "1.0",
-    "timestamp": "2026-09-06T17:44:25.669Z",
+    "timestamp": "2026-09-06T23:09:26.334Z",
     "support": {
       "contact": "admin@swapi.tech"
     }
