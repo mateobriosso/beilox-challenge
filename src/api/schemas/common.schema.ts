@@ -117,6 +117,21 @@ export function recordListSchema(properties: SchemaObject, minItems = 0): Schema
 }
 
 /**
+ * 404 envelope as the API *should* return it: a single, correctly spelled `message`.
+ * `/people/:id` and `/films/:id` already comply; `/planets/:id` does not (see below),
+ * so the planets spec asserts this schema under `test.fail` to track the upstream fix.
+ */
+export const canonicalNotFoundSchema: SchemaObject = {
+  type: 'object',
+  properties: {
+    message: nonEmptyString,
+    ...metaProperties,
+  },
+  required: ['message', ...META_REQUIRED],
+  additionalProperties: false,
+};
+
+/**
  * 404 envelope. `/planets/:id` returns the key misspelled as `messsage`;
  * `anyOf` accepts either spelling so the defect is visible in the schema
  * rather than silently tolerated by a loose `additionalProperties: true`.

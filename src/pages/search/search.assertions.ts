@@ -40,6 +40,10 @@ export class SearchAssertions {
     );
   }
 
+  public async expectPassengers(count: number): Promise<void> {
+    await expect(this.searchPage.passengers).toHaveValue(String(count));
+  }
+
   public async expectDepartureDate(date: Date): Promise<void> {
     await expect(this.searchPage.departureDate).toHaveValue(departureInputPattern(date));
   }

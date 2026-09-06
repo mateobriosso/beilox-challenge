@@ -1,13 +1,27 @@
 import { test } from '../../src/fixtures/ui.fixture';
 import type { SearchCriteria } from '../../src/data/routes.data';
-import { POPULAR_ROUTE, UNKNOWN_CITY, UNSERVED_ROUTE } from '../../src/data/routes.data';
+import {
+  POPULAR_ROUTE,
+  SAME_STATION_ROUTE,
+  UNKNOWN_CITY,
+  UNSERVED_ROUTE,
+} from '../../src/data/routes.data';
 import { daysFromToday } from '../../src/utils/dates';
 
 /** Far enough ahead to have services on sale, close enough to stay in the calendar. */
 const DEPARTURE_IN_DAYS = 7;
 
+/** Not the form's default (1), so the assertions prove the selection travelled through. */
+const PASSENGERS = 2;
+
 const popularTrip: SearchCriteria = {
   ...POPULAR_ROUTE,
+  departureDate: daysFromToday(DEPARTURE_IN_DAYS),
+  passengers: PASSENGERS,
+};
+
+const sameStationTrip: SearchCriteria = {
+  ...SAME_STATION_ROUTE,
   departureDate: daysFromToday(DEPARTURE_IN_DAYS),
   passengers: 1,
 };
@@ -24,7 +38,7 @@ test.describe('Búsqueda de pasajes en centraldepasajes.com.ar', () => {
   });
 
   test.describe('búsqueda válida', () => {
-    test('muestra servicios coherentes con el origen, destino y fecha ingresados', async ({
+    test('muestra servicios coherentes con origen, destino, fecha y pasajeros ingresados', async ({
       searchPage,
       resultsPage,
       resultsAssertions,
@@ -35,6 +49,7 @@ test.describe('Búsqueda de pasajes en centraldepasajes.com.ar', () => {
       await resultsAssertions.expectUrlReflects(popularTrip);
       await resultsAssertions.expectRouteHeading(popularTrip);
       await resultsAssertions.expectSelectedDate(popularTrip.departureDate);
+      await resultsAssertions.expectPassengers(popularTrip.passengers);
       await resultsAssertions.expectServicesForRoute(popularTrip);
     });
   });
@@ -50,6 +65,23 @@ test.describe('Búsqueda de pasajes en centraldepasajes.com.ar', () => {
 
       await resultsAssertions.expectUrlReflects(unservedTrip);
       await resultsAssertions.expectNoServicesMessage();
+    });
+
+    test('mantiene el encabezado con la ruta buscada aunque no haya servicios', async ({
+      searchPage,
+      resultsPage,
+      resultsAssertions,
+    }) => {
+      // Known site defect (observed 2026-09-06): the results page renders `h1.city-names`
+      // with empty origin/destination spans when there are no services, although the
+      // `<title>` still names the route. Marked as an expected failure so the suite stays
+      // green today and flags the moment the site fixes it.
+      test.fail(true, 'centraldepasajes.com.ar leaves the route heading empty on no-results pages');
+
+      await searchPage.search(unservedTrip);
+      await resultsPage.waitForLoaded();
+
+      await resultsAssertions.expectRouteHeading(unservedTrip);
     });
   });
 
@@ -71,6 +103,21 @@ test.describe('Búsqueda de pasajes en centraldepasajes.com.ar', () => {
       await searchPage.typeStation('origin', UNKNOWN_CITY);
 
       await searchAssertions.expectNoStationSuggestions();
+    });
+
+    test('acepta origen y destino iguales y solo lo informa como búsqueda sin opciones', async ({
+      searchPage,
+      resultsPage,
+      resultsAssertions,
+    }) => {
+      // The destination picker is not filtered by the chosen origin, so the form lets the
+      // same station through and the site only reacts downstream with the "no options"
+      // modal. This test documents that validation gap rather than a desired behaviour.
+      await searchPage.search(sameStationTrip);
+      await resultsPage.waitForLoaded();
+
+      await resultsAssertions.expectUrlReflects(sameStationTrip);
+      await resultsAssertions.expectNoServicesMessage();
     });
 
     test('no permite elegir una fecha pasada en el calendario', async ({
@@ -98,6 +145,7 @@ test.describe('Búsqueda de pasajes en centraldepasajes.com.ar', () => {
       await searchAssertions.expectSelectedOrigin(popularTrip.origin);
       await searchAssertions.expectSelectedDestination(popularTrip.destination);
       await searchAssertions.expectDepartureDate(popularTrip.departureDate);
+      await searchAssertions.expectPassengers(popularTrip.passengers);
     });
   });
 });

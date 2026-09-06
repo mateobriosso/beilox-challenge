@@ -10,6 +10,9 @@ export const resultsSelectors = {
   /** Date strip above the list; the searched day carries `.active`. */
   selectedDate: '.fechas-slider a.active .fecha',
 
+  /** Embedded "Modificar" form; its passengers select mirrors the `CntPas` parameter. */
+  passengers: '#pasajeros',
+
   /** Container hidden when the route has no services. */
   servicesContainer: '#servicios',
   serviceCard: '#servicios .card',

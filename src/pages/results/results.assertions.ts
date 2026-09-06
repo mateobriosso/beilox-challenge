@@ -31,6 +31,11 @@ export class ResultsAssertions {
     );
   }
 
+  /** The embedded search form carries the searched passenger count (`CntPas`). */
+  public async expectPassengers(count: number): Promise<void> {
+    await expect(this.resultsPage.passengers).toHaveValue(String(count));
+  }
+
   /** The date strip highlights the searched day (e.g. "13 Sep"). */
   public async expectSelectedDate(date: Date): Promise<void> {
     await expect(this.resultsPage.selectedDate).toHaveText(formatDayShortMonth(date));

@@ -64,6 +64,16 @@ export const UNSERVED_ROUTE: Route = {
   destination: STATIONS.ushuaia,
 };
 
+/**
+ * Origin and destination are the same station. The form does not reject this
+ * (the destination list is not filtered by the chosen origin), so the site only
+ * reports it downstream as "no options" — documented as a validation gap.
+ */
+export const SAME_STATION_ROUTE: Route = {
+  origin: STATIONS.retiro,
+  destination: STATIONS.retiro,
+};
+
 /** A city that does not exist in the station catalogue. */
 export const UNKNOWN_CITY = 'Xyzzyq';
 

@@ -26,3 +26,6 @@ Thumbs.db
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Playwright MCP session artifacts
+.playwright-mcp/

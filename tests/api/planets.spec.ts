@@ -4,7 +4,13 @@ import {
   expectNotFound,
   expectSuccessfulJson,
 } from '../../src/api/assertions/api.assertions';
-import { notFoundSchema, pagedListSchema, planetDetailSchema, planetSearchSchema } from '../../src/api/schemas';
+import {
+  canonicalNotFoundSchema,
+  notFoundSchema,
+  pagedListSchema,
+  planetDetailSchema,
+  planetSearchSchema,
+} from '../../src/api/schemas';
 import type {
   PlanetProperties,
   SwapiDetail,
@@ -68,6 +74,19 @@ test.describe('GET /planets', () => {
     // The assertion documents the behaviour so a fix upstream is noticed.
     const body = response.body as SwapiNotFound;
     expect(body.messsage ?? body.message).toMatch(/not found/i);
+  });
+
+  test('el 404 debería usar la clave `message` como el resto de la API (defecto conocido)', async ({
+    swapi,
+  }) => {
+    // Upstream defect observed 2026-09-06: the body is `{"messsage": "Not found", ...}`.
+    // Expected failure keeps the suite green while making the contract explicit; the day
+    // swapi.tech fixes the key this test "unexpectedly passes" and the annotation can go.
+    test.fail(true, 'swapi.tech /planets/:id misspells the 404 key as `messsage`');
+
+    const response = await swapi.getById('planets', NON_EXISTENT_ID);
+
+    expectNotFound(response, canonicalNotFoundSchema);
   });
 
   test('responde 400 ante un body JSON malformado', async ({ swapi }) => {

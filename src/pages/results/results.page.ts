@@ -16,6 +16,7 @@ export class ResultsPage extends BasePage {
   public readonly routeOrigin: Locator;
   public readonly routeDestination: Locator;
   public readonly selectedDate: Locator;
+  public readonly passengers: Locator;
   public readonly servicesContainer: Locator;
   public readonly serviceCards: Locator;
   public readonly noResultsModal: Locator;
@@ -27,6 +28,7 @@ export class ResultsPage extends BasePage {
     this.routeOrigin = page.locator(sel.routeOrigin);
     this.routeDestination = page.locator(sel.routeDestination);
     this.selectedDate = page.locator(sel.selectedDate);
+    this.passengers = page.locator(sel.passengers);
     this.servicesContainer = page.locator(sel.servicesContainer);
     this.serviceCards = page.locator(sel.serviceCard);
     this.noResultsModal = page.locator(sel.noResultsModal);
