@@ -19,7 +19,6 @@ export default defineConfig({
       ['./src/reporters/response-time.reporter.ts'],
     ]
   : [['list'], ['html', { open: 'never' }], ['./src/reporters/response-time.reporter.ts']],
-  snapshotDir: './snapshots',
 
   use: {
     trace: 'retain-on-failure',

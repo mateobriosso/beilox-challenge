@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import type { SchemaObject } from 'ajv';
 import type { ApiResponse } from '../clients/swapi.client';
 import { env } from '../../utils/env';
@@ -22,11 +22,22 @@ export function expectStatus(response: ApiResponse, expected: number): void {
   );
 }
 
-/** Asserts the round-trip stayed under the configured budget (`API_MAX_RESPONSE_MS`). */
+/** Annotation consumed by `src/reporters/response-time.reporter.ts`. */
+const RESPONSE_TIME_ANNOTATION = 'response-time';
+
+/**
+ * Asserts the round-trip stayed under the configured budget (`API_MAX_RESPONSE_MS`)
+ * and records the measurement as a test annotation so the custom reporter can
+ * print a per-test table and publish it to the GitHub Actions summary.
+ */
 export function expectResponseTimeWithinBudget(
   response: ApiResponse,
   maxMs: number = env.apiMaxResponseMs,
 ): void {
+  test.info().annotations.push({
+    type: RESPONSE_TIME_ANNOTATION,
+    description: String(response.durationMs),
+  });
   expect(
     response.durationMs,
     `${describeRequest(response)} took ${response.durationMs}ms, budget is ${maxMs}ms`,

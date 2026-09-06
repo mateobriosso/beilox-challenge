@@ -4,19 +4,20 @@ import type { Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 interface Row {
   title: string;
   ms: number;
-  status: TestResult['status'];
+  /** Test outcome (`expected`, `unexpected`, `flaky`, `skipped`), so a `test.fail` that fails as planned reads as `expected`. */
+  status: ReturnType<TestCase['outcome']>;
 }
 
 export default class ResponseTimeReporter implements Reporter {
   private readonly rows: Row[] = [];
 
-  public onTestEnd(test: TestCase, result: TestResult): void {
+  public onTestEnd(test: TestCase, _result: TestResult): void {
     const a = test.annotations.find((x) => x.type === 'response-time');
     if (a?.description) {
       this.rows.push({
-        title: test.title,
+        title: `${test.parent.title} › ${test.title}`,
         ms: Number.parseInt(a.description, 10),
-        status: result.status,
+        status: test.outcome(),
       });
     }
   }

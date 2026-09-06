@@ -439,3 +439,32 @@ concrete way*, and the repo only had them configured. Use two MCPs for real and 
   message). Screenshot in `docs/evidence/ui-same-station-accepted.png`, body drafted in
   `docs/evidence/issue-cdp-same-station.md`. The covering test in `tests/ui/search.spec.ts`
   now references the issue.
+
+---
+
+## 2026-09-06 — Session 10: Delivery polish
+
+### Prompt (user)
+
+Apply the cheap improvements from the delivery review, and reframe the GitHub MCP paragraph:
+the second MCP was not used because `gh` CLI was already authenticated on the machine, and it
+should count as equivalent since it fulfils the same function with fewer tokens.
+
+### Actions taken (AI)
+
+- `src/api/assertions/api.assertions.ts`: `expectResponseTimeWithinBudget` now pushes a
+  `response-time` annotation with the measured milliseconds, so the existing
+  `src/reporters/response-time.reporter.ts` finally receives data and prints the per-test
+  table (and the GitHub Actions step summary on CI). Before this the reporter was dead code.
+- Removed the unused `snapshots/` folder and the `snapshotDir` entry in `playwright.config.ts`;
+  the suite has no visual snapshots.
+- README: workflow badge and link to the green manual run; `docs/evidence/` in the tree;
+  a note on the language split; typo and count fix in theoretical answer 1; new section
+  "Qué dejé afuera y por qué" listing nine scope decisions with their reasons; the GitHub
+  paragraph rewritten as a deliberate CLI-over-MCP choice with the token-cost argument.
+
+### Decisions / notes
+
+- The factual record stays: in session 9 the GitHub MCP failed to connect with
+  `does not support dynamic client registration`. The README states the decision the user
+  stands behind (CLI is equivalent and cheaper); this log keeps both facts.

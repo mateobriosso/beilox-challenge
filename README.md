@@ -1,5 +1,8 @@
 # beilox-challenge
 
+[![Playwright Tests](https://github.com/mateobriosso/beilox-challenge/actions/workflows/playwright.yml/badge.svg)](https://github.com/mateobriosso/beilox-challenge/actions/workflows/playwright.yml)
+[Última corrida manual verde](https://github.com/mateobriosso/beilox-challenge/actions/runs/34060337853) · [Issues abiertos por la suite](https://github.com/mateobriosso/beilox-challenge/issues)
+
 Framework de automatización de pruebas con **Playwright + TypeScript** que cubre, en un mismo proyecto, pruebas de UI sobre [centraldepasajes.com.ar](https://www.centraldepasajes.com.ar) y pruebas de API sobre [swapi.tech](https://www.swapi.tech), con validación de schemas mediante Ajv y ejecución automática en GitHub Actions.
 
 ## Stack
@@ -61,15 +64,18 @@ src/
   fixtures/         test.extend para inyectar page objects y el cliente de API
   data/             Datos de prueba: rutas, estaciones, ids conocidos, mensajes esperados
   utils/            env, fechas, validador Ajv, persistencia del happy path
-  reporters/        Reporter custom de tiempos de respuesta
+  reporters/        Reporter custom: tabla de tiempos de respuesta por test y resumen en Actions
 tests/
   ui/search.spec.ts
   api/people.spec.ts | planets.spec.ts | films.spec.ts
 resource/api/       Body de cada happy path guardado como JSON
 docs/ai-usage.md    Registro de cada interacción con el asistente de IA
+docs/evidence/      Capturas y cuerpos de los issues reportados durante el challenge
 ```
 
 **Page Object Model en tres capas.** Cada página se divide en `*.selectors.ts` (solo CSS), `*.page.ts` (acciones y locators, con esperas web-first) y `*.assertions.ts` (expectativas expresadas en términos del criterio de búsqueda). Los specs no conocen selectores.
+
+**Idiomas.** El README, los títulos de los tests y los issues están en español porque son lo que lee el equipo y el reporte. El código, los comentarios, los mensajes de commit y `docs/ai-usage.md` están en inglés, que es la convención del repo desde el primer commit.
 
 ## Cobertura
 
@@ -130,7 +136,7 @@ verificó cada etapa.
 
 En la página sin resultados el árbol no contiene ningún `heading` de nivel 1, lo que confirma el defecto del `h1` vacío que vigila un `test.fail`. Captura en [`docs/evidence/ui-no-results-empty-heading.png`](docs/evidence/ui-no-results-empty-heading.png).
 
-**GitHub MCP** (servidor remoto `api.githubcopilot.com/mcp`). Caso de uso: cargar los defectos encontrados como issues del repo con la evidencia de `docs/evidence/`, desde la misma sesión en la que se reprodujeron. Los tres issues existen: [#1 typo `messsage` en swapi.tech](https://github.com/mateobriosso/beilox-challenge/issues/1), [#2 `h1` vacío en centraldepasajes.com.ar](https://github.com/mateobriosso/beilox-challenge/issues/2) y [#3 el buscador acepta la misma estación como origen y destino](https://github.com/mateobriosso/beilox-challenge/issues/3), y los tests que los cubren los referencian. Trade-off honesto: en la sesión en que se crearon, el MCP no conectó (`does not support dynamic client registration`: el servidor de GitHub no acepta el registro OAuth automático de Claude Code), así que la carga se hizo con `gh` CLI y `.mcp.json` quedó corregido para autenticar con `Authorization: Bearer ${GITHUB_MCP_TOKEN}`, con el token en el entorno y nunca en el repo.
+**GitHub, vía CLI en lugar del MCP.** Caso de uso: cargar los defectos encontrados como issues del repo con la evidencia de `docs/evidence/`, desde la misma sesión en la que se reprodujeron. Los tres issues existen: [#1 typo `messsage` en swapi.tech](https://github.com/mateobriosso/beilox-challenge/issues/1), [#2 `h1` vacío en centraldepasajes.com.ar](https://github.com/mateobriosso/beilox-challenge/issues/2) y [#3 el buscador acepta la misma estación como origen y destino](https://github.com/mateobriosso/beilox-challenge/issues/3), y los tests que los cubren los referencian. El MCP de GitHub está configurado en `.mcp.json`, pero decidí no usarlo: ya tenía `gh` autenticado en la máquina, y el asistente lo invoca exactamente igual que a un MCP (crea el issue, le pone labels, lee el estado de las corridas de Actions) con una diferencia práctica: un MCP carga la definición de todas sus tools en cada turno, mientras que `gh` solo consume los tokens del comando que se ejecuta. Para el mismo resultado, la opción más barata gana. Si se prefiere el MCP, `.mcp.json` ya autentica con `Authorization: Bearer ${GITHUB_MCP_TOKEN}`, con el token en el entorno y nunca en el repo. El registro de cada paso está en `docs/ai-usage.md`.
 
 ### Un caso donde decidí no usar el asistente
 
@@ -146,11 +152,23 @@ No lo usé en el challenge porque los dos targets son sistemas públicos de solo
 
 Con credenciales de solo lectura para el asistente, escritura únicamente a través de un script de seeding revisado, y nunca contra producción.
 
+## Qué dejé afuera y por qué
+
+- **Un solo browser (Chromium).** El challenge no pide cross-browser y el sitio es server-rendered; Firefox y WebKit sumarían tiempo de CI sin cubrir riesgo nuevo hoy. Quedan como proyectos a agregar en la corrida programada (ver "Cómo escalar el workflow").
+- **Un solo job de CI.** Con 27 tests el job entero tarda menos de dos minutos; separar UI y API en jobs o shards es la primera mejora cuando crezca, y está explicada arriba en lugar de implementada.
+- **Tags `@smoke` / `@regression`.** Con una sola spec de UI no hay nada que filtrar todavía. Se introducen cuando exista una suite que tarde más que el gate que el equipo tolere.
+- **Mock de la respuesta "sin resultados".** La página de resultados se renderiza en el servidor, no hay XHR que interceptar con `page.route()`. El escenario usa una ruta real sin servicios (Tres Arroyos → Ushuaia), que depende del inventario de un tercero; si algún día aparece un servicio, el test avisa y se cambia la ruta en `src/data/routes.data.ts`.
+- **Validación origen = destino.** El sitio no la tiene (issue #3). El test documenta el comportamiento actual en lugar de exigir el deseado, porque el objetivo de la suite es describir el sitio de referencia, no reescribirlo.
+- **`.env.example`.** Los valores por defecto viven en `src/utils/env.ts` y las variables están documentadas en este README, así que el archivo de ejemplo era redundante. En un proyecto con credenciales reales lo agregaría.
+- **Schemas tolerantes.** Elegí `additionalProperties: false` para que un campo nuevo en swapi.tech se vea como cambio de contrato. La alternativa tolerante rompe menos pero informa menos; es una política, no un olvido.
+- **`JSONSchemaType<T>` de Ajv.** Usé `SchemaObject` más interfaces TypeScript separadas. Se pierde la garantía de que schema e interfaz coincidan en compile time, a cambio de schemas legibles y sin pelear con `exactOptionalPropertyTypes`.
+- **Atlassian MCP.** Está configurado en `.mcp.json` desde el bootstrap, pero no lo usé: no tengo un Jira de referencia para este challenge y el flujo de bugs quedó en GitHub Issues.
+
 ## Preguntas teóricas
 
 ### 1. Escalabilidad: la suite creció a 500 tests
 
-Primero separaría por dominio funcional, no por tipo técnico: `tests/ui/search/`, `tests/ui/checkout/`, `tests/api/people/`, con sus page objects y datos al lado. Después agregaría etiquetas (`@smoke`, `@regression`, `@slow`) para que el gate de PR corra en minutos y la regresión completa quede para la corrida programada. Los fixtures pasarían a componerse (un `test` base con autenticación, otro con datos sembrados) en vez de un único `test.extend`que lo sabe todo. También pondría un límite claro: ningún spec de más de 10 tests, ningún page object de más de 200 líneas (cuando sean más, se divide el archivo). Con más de 100 tests el problema ya no es escribir tests, es que alguien pueda encontrar el que falló y entenderlo rápido.
+Primero separaría por dominio funcional, no por tipo técnico: `tests/ui/search/`, `tests/ui/checkout/`, `tests/api/people/`, con sus page objects y datos al lado. Después agregaría etiquetas (`@smoke`, `@regression`, `@slow`) para que el gate de PR corra en minutos y la regresión completa quede para la corrida programada. Los fixtures pasarían a componerse (un `test` base con autenticación, otro con datos sembrados) en vez de un único `test.extend` que lo sabe todo. También pondría un límite claro: ningún spec de más de 10 tests, ningún page object de más de 200 líneas (cuando sean más, se divide el archivo). Con 500 tests el problema ya no es escribir tests, es que alguien pueda encontrar el que falló y entenderlo rápido.
 
 ### 2. Flakiness: un test intermitente sin cambios en el código
 
