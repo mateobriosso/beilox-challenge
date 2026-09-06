@@ -403,8 +403,9 @@ concrete way*, and the repo only had them configured. Use two MCPs for real and 
   - Side finding: the "popular destinations" links use `?DIda=<days>&CntPas=` while a
     submitted search produces `?FIda=<MM/DD/YYYY>&CntPas=`. Two URL formats for the same
     page; the suite asserts on `FIda` because that is what the form emits.
-- **Atlassian MCP (Jira)**: OAuth flow started from the session; completion depends on the
-  user authorising in the browser. Result appended below once done.
+- **Atlassian MCP (Jira)**: dropped as the second server. The user chose the GitHub MCP
+  instead, since the defect flow for this challenge lives in GitHub Issues and there is no
+  reference Jira to file against. It stays configured in `.mcp.json` but unused.
 - README: added "Cómo lo usé, en resumen" and "MCP servers utilizados" under *Uso del
   asistente de IA*, with the findings above.
 
@@ -418,53 +419,79 @@ concrete way*, and the repo only had them configured. Use two MCPs for real and 
 
 ### GitHub issues (appended)
 
-- The user asked for the GitHub MCP as the second server instead of Jira. It could not
-  connect in this session: Claude Code reported `Incompatible auth server: does not support
-  dynamic client registration`. The remote GitHub MCP needs a bearer token, so `.mcp.json`
-  now sends `Authorization: Bearer ${GITHUB_MCP_TOKEN}`; the variable is expanded from the
-  shell environment and no secret is committed.
-- Because the MCP was unavailable, the two defects were filed with `gh` CLI (authenticated as
-  the user), from the bodies drafted in `docs/evidence/issue-*.md`:
+- The user asked for the GitHub MCP as the second MCP server instead of Jira. The remote
+  server (`https://api.githubcopilot.com/mcp/`) authenticates with a bearer token, so
+  `.mcp.json` sends `Authorization: Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}`; the variable is
+  expanded from the shell environment and no secret is committed.
+- The three defects found while exploring were filed as issues on the repo, from the bodies
+  drafted in `docs/evidence/issue-*.md`:
   - #1 `[swapi.tech] 404 de /api/planets/:id devuelve la clave 'messsage'` (label `bug`).
   - #2 `[centraldepasajes.com.ar] La página de resultados sin servicios renderiza el h1 vacío`
     (labels `bug`, `accessibility`), linking the Playwright MCP screenshot.
+  - #3 `[centraldepasajes.com.ar] El buscador acepta la misma estación como origen y destino`
+    (labels `bug`, `enhancement`), filed after reproducing the results page for
+    `retiro-buenos-aires/retiro-buenos-aires` with Playwright MCP (`browser_navigate`,
+    `browser_find`: the tree contains the generic no-results `dialog` and no validation
+    message). Screenshot in `docs/evidence/ui-same-station-accepted.png`, body drafted in
+    `docs/evidence/issue-cdp-same-station.md`.
 - The `test.fail` annotations in `tests/ui/search.spec.ts` and `tests/api/planets.spec.ts`
   now reference the issue numbers.
-- Documented in the README as a trade-off rather than claiming MCP usage that did not happen.
-- Follow-up (user): the third defect found during exploration had no issue. Filed #3
-  `[centraldepasajes.com.ar] El buscador acepta la misma estación como origen y destino`
-  (labels `bug`, `enhancement`) with `gh`, after reproducing the results page for
-  `retiro-buenos-aires/retiro-buenos-aires` with Playwright MCP (`browser_navigate`,
-  `browser_find`: the tree contains the generic no-results `dialog` and no validation
-  message). Screenshot in `docs/evidence/ui-same-station-accepted.png`, body drafted in
-  `docs/evidence/issue-cdp-same-station.md`. The covering test in `tests/ui/search.spec.ts`
-  now references the issue.
+- Session 10 below records the GitHub MCP connected and driven against these three issues.
 
 ---
 
-## 2026-09-06 — Session 10: Delivery polish
+## 2026-09-06 — Session 10: Challenge compliance audit and GitHub MCP
 
 ### Prompt (user)
 
-Apply the cheap improvements from the delivery review, and reframe the GitHub MCP paragraph:
-the second MCP was not used because `gh` CLI was already authenticated on the machine, and it
-should count as equivalent since it fulfils the same function with fewer tokens.
+Three requests in one session: (1) the GitHub MCP now connects, so drop the previous last
+entry of this log; (2) check the repo against the challenge document and report what is and
+is not covered; (3) go ahead with the proposed fix — use the GitHub MCP concretely and
+rewrite every record that said the second MCP had not been used.
 
 ### Actions taken (AI)
 
-- `src/api/assertions/api.assertions.ts`: `expectResponseTimeWithinBudget` now pushes a
-  `response-time` annotation with the measured milliseconds, so the existing
-  `src/reporters/response-time.reporter.ts` finally receives data and prints the per-test
-  table (and the GitHub Actions step summary on CI). Before this the reporter was dead code.
-- Removed the unused `snapshots/` folder and the `snapshotDir` entry in `playwright.config.ts`;
-  the suite has no visual snapshots.
-- README: workflow badge and link to the green manual run; `docs/evidence/` in the tree;
-  a note on the language split; typo and count fix in theoretical answer 1; new section
-  "Qué dejé afuera y por qué" listing nine scope decisions with their reasons; the GitHub
-  paragraph rewritten as a deliberate CLI-over-MCP choice with the token-cost argument.
+- **Log edit.** Removed the previous "Session 10: Delivery polish" entry as asked. The code
+  changes it described are real and still in the tree, so they are re-recorded here to keep
+  the log complete: `expectResponseTimeWithinBudget` pushes a `response-time` annotation that
+  feeds `src/reporters/response-time.reporter.ts` (before that the reporter received nothing);
+  the unused `snapshots/` folder and its `snapshotDir` entry were deleted; the README gained
+  the workflow badge, the language note and the "Qué dejé afuera y por qué" section.
+- **Compliance audit** against the challenge document, block by block, with the gates run
+  rather than assumed: `npm run lint` → 0 problems, `npm run typecheck` → clean,
+  `npx playwright test` → **27 passed** (19 api, 8 ui) with the two `test.fail` defect
+  watchers failing as designed. Confirmed `.env` is absent from `git ls-files`, there is no
+  `any` and no `waitForTimeout` in `src/` or `tests/`, `resource/api/` holds the six
+  happy-path bodies, and the cron `0 18 * * 1` matches Mondays 15:00 ART.
+  - Single hard gap found: block 3 asks for **two** MCP servers used concretely, and only the
+    Playwright MCP qualified — the GitHub side had been done with the `gh` CLI.
+- **GitHub MCP used** (`https://api.githubcopilot.com/mcp/`), closing that gap:
+  - `get_me` → authenticated as `mateobriosso`, confirming the bearer token in `.mcp.json`
+    resolves and which account the session acts as.
+  - `list_issues` → the three defect issues are open with the expected labels
+    (#1 `bug`, #2 `bug`/`accessibility`, #3 `bug`/`enhancement`).
+  - `issue_read` on #1, #2 and #3 → bodies cross-checked against `docs/evidence/issue-*.md`
+    and against the tests that reference them, verifying the reproduction steps still match
+    what the suite asserts.
+  - `add_issue_comment` on #1, #2 and #3 → **rejected with HTTP 403 "Resource not accessible
+    by personal access token"**. The token grants read but not write on issues; the comments
+    with the re-verification evidence from today's run are drafted and will be posted once
+    the token is regenerated with `Issues: Read and write`.
+- **README** rewritten where it described the GitHub side as a deliberate CLI-over-MCP
+  choice: the section now lists Playwright MCP and GitHub MCP as the two servers used, with
+  the concrete calls and findings of each, and the environment variable name corrected to
+  `GITHUB_PERSONAL_ACCESS_TOKEN` to match `.mcp.json`.
 
 ### Decisions / notes
 
-- The factual record stays: in session 9 the GitHub MCP failed to connect with
-  `does not support dynamic client registration`. The README states the decision the user
-  stands behind (CLI is equivalent and cheaper); this log keeps both facts.
+- The 403 is recorded rather than papered over. The MCP is genuinely connected and doing
+  real work (identity, issue listing, issue reading); claiming it also wrote comments would
+  be exactly the kind of unverified statement the "uso responsable" section argues against.
+- `.mcp.json` was committed in this session; it carries only the variable name, never the
+  token value.
+
+### Verification
+
+- `npm run lint` → 0 problems.
+- `npm run typecheck` → clean.
+- `npx playwright test` → 27 passed.
