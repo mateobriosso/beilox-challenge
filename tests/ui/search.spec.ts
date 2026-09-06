@@ -115,7 +115,8 @@ test.describe('Búsqueda de pasajes en centraldepasajes.com.ar', () => {
     }) => {
       // The destination picker is not filtered by the chosen origin, so the form lets the
       // same station through and the site only reacts downstream with the "no options"
-      // modal. This test documents that validation gap rather than a desired behaviour.
+      // modal. This test documents that validation gap (issue #3) rather than a desired
+      // behaviour; if the site adds the validation, rewrite it as a form-level check.
       await searchPage.search(sameStationTrip);
       await resultsPage.waitForLoaded();
 

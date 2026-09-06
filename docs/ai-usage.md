@@ -431,3 +431,11 @@ concrete way*, and the repo only had them configured. Use two MCPs for real and 
 - The `test.fail` annotations in `tests/ui/search.spec.ts` and `tests/api/planets.spec.ts`
   now reference the issue numbers.
 - Documented in the README as a trade-off rather than claiming MCP usage that did not happen.
+- Follow-up (user): the third defect found during exploration had no issue. Filed #3
+  `[centraldepasajes.com.ar] El buscador acepta la misma estación como origen y destino`
+  (labels `bug`, `enhancement`) with `gh`, after reproducing the results page for
+  `retiro-buenos-aires/retiro-buenos-aires` with Playwright MCP (`browser_navigate`,
+  `browser_find`: the tree contains the generic no-results `dialog` and no validation
+  message). Screenshot in `docs/evidence/ui-same-station-accepted.png`, body drafted in
+  `docs/evidence/issue-cdp-same-station.md`. The covering test in `tests/ui/search.spec.ts`
+  now references the issue.
