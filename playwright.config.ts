@@ -12,6 +12,7 @@ export default defineConfig({
   reporter: isCI
   ? [
       ['github'],
+      ['html', { open: 'never' }],
       ['blob'],
       ['json', { outputFile: 'test-results/results.json' }],
       ['junit', { outputFile: 'test-results/junit.xml' }],

@@ -318,3 +318,49 @@ Implement both parts of the challenge inside the existing Playwright project:
 - `npm run lint` → 0 problems.
 - `npm run typecheck` → clean.
 - `npx playwright test` → 24 passed (18 api, 6 ui-chromium).
+
+---
+
+## 2026-09-06 — Session 9: CI/CD with GitHub Actions
+
+### Prompt (user)
+
+Evolve `.github/workflows/playwright.yml` (no second workflow): keep push/PR on master as a
+quality gate, add a weekly schedule (Mondays 15:00 Argentina time, converted to UTC with a
+comment) and `workflow_dispatch`. Steps: checkout, Node 20 with npm cache, `npm ci`, lint,
+typecheck, Chromium only (`--with-deps`), tests with `CI=true`. Upload artifacts even on
+failure: `playwright-report`, `test-results`, and `resource/api/*.json` separately. Minimal
+permissions, timeout, per-branch concurrency. No secrets. Do not touch test logic; flag
+anything in the code that blocks CI. Log, commit, push, trigger with `gh`, report the result.
+
+### Actions taken (AI)
+
+- Rewrote the scaffolded workflow in place:
+  - Triggers: `push`/`pull_request` on `master` (the scaffold's `main` was dropped, the repo
+    has no such branch), `schedule` with `cron: '0 18 * * 1'` (15:00 ART = 18:00 UTC; Argentina
+    has no DST, noted in a comment) and `workflow_dispatch`.
+  - `permissions: contents: read`, `timeout-minutes: 30`, `concurrency` keyed on
+    `github.ref` with `cancel-in-progress`.
+  - Steps: checkout → `setup-node` (Node 20, `cache: npm`) → `npm ci` → `npm run lint` →
+    `npm run typecheck` → `npx playwright install --with-deps chromium` → `npm test`
+    (both projects) with `CI: true` at job level.
+  - Three `upload-artifact@v4` steps guarded by `if: ${{ !cancelled() }}`: `playwright-report`
+    (30 days), `test-results` (traces, videos, `results.json`, `junit.xml`, 30 days) and
+    `happy-path-json` from `resource/api/*.json` (90 days, `if-no-files-found: error` so a
+    missing contract file is visible).
+- **One config change outside the workflow, flagged here:** Session 7's follow-up commit
+  (`3986416`) replaced the `html` reporter with `blob` on CI, so `playwright-report/` would
+  never exist on the runner and the requested artifact would be empty. Added
+  `['html', { open: 'never' }]` back to the CI reporter list in `playwright.config.ts`.
+  No test logic was touched.
+
+### Verification
+
+- `npm run lint` → 0 problems; `npm run typecheck` → clean (working tree now includes the
+  sibling session's reporter, which passes lint after its own fixes).
+- `CI=true npx playwright test --project=api` locally → 19 passed and produced
+  `playwright-report/index.html`, `blob-report/report-api.zip`, `test-results/results.json`
+  and `test-results/junit.xml`, i.e. every artifact path the workflow uploads exists.
+- Workflow YAML parsed with PyYAML and js-yaml; triggers resolved to push, pull_request,
+  schedule and workflow_dispatch.
+- Remote run result: see the end of this entry (appended after `gh workflow run`).
