@@ -516,7 +516,7 @@ the suite tolerates instead of hiding them behind "27 passed".
 
 ---
 
-## 2026-09-07 — Session 11: Timezone-independent dates, traced from a CI signal
+## 2026-09-06 — Session 11: Timezone-independent dates, traced from a CI signal
 
 ### Prompt (user)
 
@@ -531,11 +531,11 @@ so the delivery is green?
 - **Root-caused to a timezone boundary between the runner and the browser.** `daysFromToday()`
   derived dates from `new Date()`, i.e. the *host* timezone — UTC on a GitHub runner — while
   `playwright.config.ts` pins the browser context to `America/Argentina/Buenos_Aires`. The run
-  started at `00:02 UTC`, which is `21:02 ART` of the previous day: Node resolved "yesterday"
-  to the 6th while the site still rendered the 6th as today, and therefore selectable. The
-  condition only exists between 21:00 and 00:00 ART, which is precisely the profile of an
-  intermittent failure with no code change behind it — the kind that costs a team days when
-  it is retried away instead of read.
+  started at `00:02 UTC on the 7th`, which is still `21:02 ART on the 6th`: Node resolved
+  "yesterday" to the 6th while the site, correctly, still rendered the 6th as today and
+  therefore selectable. The condition only exists between 21:00 and 00:00 ART, which is
+  precisely the profile of an intermittent failure with no code change behind it — the kind
+  that costs a team days when it is retried away instead of read.
 - **Hardened at the source rather than in CI config.** `daysFromToday()` now derives the
   current date through `Intl.DateTimeFormat` in the new `SITE_TIME_ZONE` constant, so the
   suite and the site agree on the date from any machine in any zone. Setting `TZ` on the
