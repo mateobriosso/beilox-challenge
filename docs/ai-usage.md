@@ -507,3 +507,49 @@ the suite tolerates instead of hiding them behind "27 passed".
 - `npm run typecheck` → clean.
 - `npx playwright test` → 27 passed, with the reporter listing the three tolerated defects
   in issue order.
+
+---
+
+## 2026-09-07 — Session 11: CI failure diagnosed and fixed at the source
+
+### Prompt (user)
+
+A GitHub Actions run failed. Should the failing test be wrapped in `test.fail` so the
+delivery is green?
+
+### Actions taken (AI)
+
+- **Read the failure before deciding.** Run 34068441565 failed on
+  `no permite elegir una fecha pasada en el calendario`, not on the same-station test:
+  `locator('.day.invalid').filter({ hasText: /^6$/ })` found no element.
+- **Root cause: a timezone split between the runner and the browser.** `daysFromToday()`
+  built dates from `new Date()`, which uses the *host* timezone — UTC on the GitHub runner —
+  while `playwright.config.ts` pins the browser context to `America/Argentina/Buenos_Aires`.
+  The run started at `00:02 UTC`, i.e. `21:02 ART` the previous day, so Node computed
+  "yesterday" as the 6th while the site still considered the 6th to be *today* and rendered
+  it as selectable. The assertion looked for it as disabled and timed out. The defect
+  reproduces every day between 21:00 and 00:00 ART and is invisible outside that window,
+  which is exactly the shape of an intermittent failure with no code change behind it.
+- **Fixed at the source**, not in CI config: `daysFromToday()` now derives the current date
+  through `Intl.DateTimeFormat` in `SITE_TIME_ZONE`, so the tests and the site always agree
+  on what "today" is regardless of where the suite runs. Setting `TZ` on the workflow would
+  have hidden it on CI while leaving it broken for anyone running from another zone.
+- **Verified both directions** rather than assuming: with `TZ=UTC` (the runner's condition)
+  the old helper fails with `element(s) not found` and the new one passes.
+
+### Decisions / notes
+
+- **`test.fail` was the wrong tool here and would have made things worse.** That modifier
+  declares "this test must fail". The test passes locally and on any run outside the
+  21:00–00:00 ART window, so marking it would turn those runs into *unexpected success* and
+  paint the suite red there — the failure would move, not disappear. `test.fail` is for a
+  defect in the system under test that reproduces every time; this was a defect in the
+  suite's own date handling.
+- The Monday 15:00 ART schedule (18:00 UTC) never lands in the affected window, so the
+  weekly run was never at risk. It was the late-night push runs that broke.
+
+### Verification
+
+- `npm run lint` → 0 problems; `npm run typecheck` → clean.
+- `npx playwright test` → 27 passed.
+- `TZ=UTC npx playwright test --project=ui-chromium` → 8 passed (previously 1 failed).

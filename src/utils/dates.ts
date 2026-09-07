@@ -35,10 +35,39 @@ function pad2(value: number): string {
   return String(value).padStart(2, '0');
 }
 
-/** Returns today's date plus `days`, with the time component zeroed. */
+/**
+ * The site's timezone. `playwright.config.ts` pins the browser context to it, so every
+ * date the tests reason about has to be built in the same zone.
+ */
+export const SITE_TIME_ZONE = 'America/Argentina/Buenos_Aires';
+
+/**
+ * "Today" as the site sees it, not as the machine running the tests sees it.
+ *
+ * Node uses the host timezone (UTC on the GitHub runner) while the browser is pinned to
+ * `SITE_TIME_ZONE`, so between 21:00 and 00:00 ART the two disagree on the calendar date.
+ * Building the date from the host clock made `daysFromToday(-1)` point at the day the site
+ * still considers today, and the past-date assertion looked for it as disabled.
+ */
+function todayInSiteTimeZone(): Date {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: SITE_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const part = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((p) => p.type === type)?.value ?? '0');
+
+  return new Date(part('year'), part('month') - 1, part('day'));
+}
+
+/**
+ * Returns the site's today plus `days`, at local midnight. Only the year, month and day
+ * are ever read downstream, so the host offset never leaks into an assertion.
+ */
 export function daysFromToday(days: number): Date {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
+  const date = todayInSiteTimeZone();
   date.setDate(date.getDate() + days);
   return date;
 }
