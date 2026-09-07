@@ -17,8 +17,14 @@ export default defineConfig({
       ['json', { outputFile: 'test-results/results.json' }],
       ['junit', { outputFile: 'test-results/junit.xml' }],
       ['./src/reporters/response-time.reporter.ts'],
+      ['./src/reporters/known-defects.reporter.ts'],
     ]
-  : [['list'], ['html', { open: 'never' }], ['./src/reporters/response-time.reporter.ts']],
+  : [
+      ['list'],
+      ['html', { open: 'never' }],
+      ['./src/reporters/response-time.reporter.ts'],
+      ['./src/reporters/known-defects.reporter.ts'],
+    ],
 
   use: {
     trace: 'retain-on-failure',

@@ -26,6 +26,8 @@ import {
   UNMATCHED_SEARCH_TERM,
 } from '../../src/data/swapi.data';
 import { saveHappyPathBody } from '../../src/utils/happy-path-store';
+import { KNOWN_DEFECTS } from '../../src/data/known-defects';
+import { annotateKnownDefect } from '../../src/utils/known-defects';
 
 test.describe('GET /planets', () => {
   test('lista la primera página de planetas con paginación válida', async ({ swapi }) => {
@@ -82,6 +84,7 @@ test.describe('GET /planets', () => {
     // Upstream defect observed 2026-09-06: the body is `{"messsage": "Not found", ...}`.
     // Expected failure keeps the suite green while making the contract explicit; the day
     // swapi.tech fixes the key this test "unexpectedly passes" and the annotation can go.
+    annotateKnownDefect(KNOWN_DEFECTS.planetsNotFoundTypo);
     test.fail(true, 'swapi.tech /planets/:id misspells the 404 key as `messsage` (issue #1)');
 
     const response = await swapi.getById('planets', NON_EXISTENT_ID);

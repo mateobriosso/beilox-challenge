@@ -7,6 +7,8 @@ import {
   UNSERVED_ROUTE,
 } from '../../src/data/routes.data';
 import { daysFromToday } from '../../src/utils/dates';
+import { KNOWN_DEFECTS } from '../../src/data/known-defects';
+import { annotateKnownDefect } from '../../src/utils/known-defects';
 
 /** Far enough ahead to have services on sale, close enough to stay in the calendar. */
 const DEPARTURE_IN_DAYS = 7;
@@ -76,6 +78,7 @@ test.describe('Búsqueda de pasajes en centraldepasajes.com.ar', () => {
       // with empty origin/destination spans when there are no services, although the
       // `<title>` still names the route. Marked as an expected failure so the suite stays
       // green today and flags the moment the site fixes it.
+      annotateKnownDefect(KNOWN_DEFECTS.emptyResultsHeading);
       test.fail(
         true,
         'centraldepasajes.com.ar leaves the route heading empty on no-results pages (issue #2)',
@@ -117,6 +120,8 @@ test.describe('Búsqueda de pasajes en centraldepasajes.com.ar', () => {
       // same station through and the site only reacts downstream with the "no options"
       // modal. This test documents that validation gap (issue #3) rather than a desired
       // behaviour; if the site adds the validation, rewrite it as a form-level check.
+      annotateKnownDefect(KNOWN_DEFECTS.sameStationAccepted);
+
       await searchPage.search(sameStationTrip);
       await resultsPage.waitForLoaded();
 
