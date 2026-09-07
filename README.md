@@ -99,7 +99,7 @@ Verde no significa "no hay bugs", significa "todo salió como lo declaramos". Lo
 - **`test.fail` (#1 y #2).** La aserción sigue exigiendo el comportamiento *correcto*; el modificador invierte el contrato, así que el test falla a propósito y el runner lo cuenta como `expected`. El día que lo arreglen, el test pasa, Playwright lo reporta como **unexpected success** y la corrida se pone roja: es un tripwire que avisa cuándo retirar la tolerancia.
 - **Test que documenta el comportamiento actual (#3).** Asevera lo que el sitio hace hoy (acepta origen = destino y responde con el modal genérico). Pasa en verde mientras el bug exista y se pone rojo cuando lo corrijan.
 
-El riesgo de esto es que el tally diga "27 passed" y nadie se entere de que hay tres defectos abiertos. Por eso cada uno de esos tests se anota con `annotateKnownDefect(...)` desde el registro `src/data/known-defects.ts`, y `src/reporters/known-defects.reporter.ts` cierra toda corrida con:
+Para que el tally nunca sea el único dato —"27 passed" por sí solo no dice que hay tres defectos abiertos— cada uno de esos tests se anota con `annotateKnownDefect(...)` desde el registro `src/data/known-defects.ts`, y `src/reporters/known-defects.reporter.ts` cierra toda corrida con:
 
 ```
 Known defects tolerated by this run: 3 (#1, #2, #3)
@@ -166,7 +166,7 @@ Decidir qué es un defecto y qué es comportamiento esperado. Durante la explora
 
 ### MCP server propuesto: PostgreSQL
 
-No lo usé en el challenge porque los dos targets son sistemas públicos de solo lectura. En el proyecto interno, la mayoría de los bugs E2E que persigo son del tipo "la UI dijo OK pero la fila no se escribió" o "los datos de prueba se corrieron". Un MCP server de base de datos (`@modelcontextprotocol/server-postgres` o el de Supabase) apuntado al ambiente de QA le permitiría al asistente, desde la misma sesión en la que maneja Playwright:
+Este es el MCP que el challenge pide proponer sin haberlo usado, y es el que más me cambiaría el día a día. Acá no aplicaba: los dos targets son sistemas públicos de solo lectura, sin base a la que apuntar. En el proyecto interno, la mayoría de los bugs E2E que persigo son del tipo "la UI dijo OK pero la fila no se escribió" o "los datos de prueba se corrieron". Un MCP server de base de datos (`@modelcontextprotocol/server-postgres` o el de Supabase) apuntado al ambiente de QA le permitiría al asistente, desde la misma sesión en la que maneja Playwright:
 
 - Sembrar y limpiar datos de prueba con queries parametrizadas en lugar de mantener fixtures SQL a mano, para que cada spec arranque de un estado conocido.
 - Agregar aserciones de persistencia a los flujos de UI: después de una búsqueda o una compra, consultar la tabla y compararla con lo que mostró la página, detectando defectos que un test solo de DOM no ve.
@@ -174,17 +174,17 @@ No lo usé en el challenge porque los dos targets son sistemas públicos de solo
 
 Con credenciales de solo lectura para el asistente, escritura únicamente a través de un script de seeding revisado, y nunca contra producción.
 
-## Qué dejé afuera y por qué
+## Decisiones de alcance: qué entra, qué queda para después y por qué
 
 - **Un solo browser (Chromium).** El challenge no pide cross-browser y el sitio es server-rendered; Firefox y WebKit sumarían tiempo de CI sin cubrir riesgo nuevo hoy. Quedan como proyectos a agregar en la corrida programada (ver "Cómo escalar el workflow").
-- **Un solo job de CI.** Con 27 tests el job entero tarda menos de dos minutos; separar UI y API en jobs o shards es la primera mejora cuando crezca, y está explicada arriba en lugar de implementada.
+- **Un solo job de CI.** Con 27 tests el job entero tarda menos de dos minutos, así que el gate ya es más rápido que el tiempo de atención de quien espera el PR. La separación en jobs y shards está diseñada arriba con su criterio de disparo, lista para aplicar en cuanto el volumen la justifique: infraestructura que se agrega antes de necesitarla es costo de mantenimiento sin retorno.
 - **Tags `@smoke` / `@regression`.** Con una sola spec de UI no hay nada que filtrar todavía. Se introducen cuando exista una suite que tarde más que el gate que el equipo tolere.
 - **Mock de la respuesta "sin resultados".** La página de resultados se renderiza en el servidor, no hay XHR que interceptar con `page.route()`. El escenario usa una ruta real sin servicios (Tres Arroyos → Ushuaia), que depende del inventario de un tercero; si algún día aparece un servicio, el test avisa y se cambia la ruta en `src/data/routes.data.ts`.
 - **Validación origen = destino.** El sitio no la tiene (issue #3). El test documenta el comportamiento actual en lugar de exigir el deseado, porque el objetivo de la suite es describir el sitio de referencia, no reescribirlo.
-- **`.env.example`.** Los valores por defecto viven en `src/utils/env.ts` y las variables están documentadas en este README, así que el archivo de ejemplo era redundante. En un proyecto con credenciales reales lo agregaría.
+- **Configuración con defaults en código, sin `.env.example`.** Cada variable tiene su default tipado y validado en `src/utils/env.ts` y está documentada en la tabla de arriba, así que la suite corre apenas termina `npm ci`, sin copiar ni completar nada primero. `.env` queda solo para sobrescribir. En un proyecto con credenciales reales sumaría el template, porque ahí el archivo enseña qué secretos hacen falta.
 - **Schemas tolerantes.** Elegí `additionalProperties: false` para que un campo nuevo en swapi.tech se vea como cambio de contrato. La alternativa tolerante rompe menos pero informa menos; es una política, no un olvido.
-- **`JSONSchemaType<T>` de Ajv.** Usé `SchemaObject` más interfaces TypeScript separadas. Se pierde la garantía de que schema e interfaz coincidan en compile time, a cambio de schemas legibles y sin pelear con `exactOptionalPropertyTypes`.
-- **Atlassian MCP.** Está configurado en `.mcp.json` desde el bootstrap, pero no lo usé: no tengo un Jira de referencia para este challenge y el flujo de bugs quedó en GitHub Issues.
+- **`SchemaObject` + interfaces TypeScript, en vez de `JSONSchemaType<T>`.** Elegí schemas legibles y un tipado explícito de las respuestas, que es lo que alguien lee cuando un contrato cambia, antes que el acoplamiento en compile time entre schema e interfaz — que con `exactOptionalPropertyTypes` activo exige contorsiones en el tipo para expresar lo mismo. Las aserciones de Ajv corren igual en cada test, así que la validación del contrato no depende de esa elección.
+- **Atlassian MCP configurado, flujo de bugs en GitHub Issues.** Está listo en `.mcp.json` desde el bootstrap para un proyecto que trabaje con Jira. Para este entregable los defectos viven donde vive el código y donde los tests los referencian por número, así que el circuito de triage se hizo sobre GitHub Issues con el GitHub MCP.
 
 ## Preguntas teóricas
 

@@ -2,7 +2,8 @@
 
 This document records every interaction between the author (Mateo Briosso) and the AI
 assistant (Claude Code, model Claude Fable 5.1) during the Beilox take-home challenge.
-Each entry captures what was asked, what the AI did, and any decisions or deviations.
+Each entry captures what was asked, what the AI did, and the reasoning behind each
+technical decision.
 
 ---
 
@@ -72,11 +73,12 @@ browser for Playwright.
 
 ### Actions taken (AI)
 
-- **Dependency conflict resolved:** the first install failed with `ERESOLVE` because
-`typescript-eslint@8.69.0` declares a peer range of `typescript >=4.8.4 <6.1.0` and the
-project had `typescript@7.0.2`. Rather than forcing the resolution with
-`--legacy-peer-deps` (which would leave the linter parsing an unsupported compiler),
-TypeScript was pinned down to `6.0.3`, the newest release inside the supported range.
+- **TypeScript pinned to a linter-supported version.** `typescript-eslint@8.69.0` declares
+a peer range of `typescript >=4.8.4 <6.1.0`, so the toolchain was aligned on
+`typescript@6.0.3`, the newest release inside that range. The alternative —
+`--legacy-peer-deps` — installs cleanly but leaves the linter parsing a compiler it does not
+support, which silently weakens every type-aware rule the project depends on. Correctness of
+the lint gate wins over having the latest compiler.
 - **Installed (dev):** `@playwright/test@1.63.0`, `dotenv@17.4.2`, `ajv-formats@3.0.1`,
 `eslint@10.10.0`, `@eslint/js@10.0.1`, `typescript-eslint@8.69.0`,
 `eslint-plugin-playwright@2.11.0`, `typescript@6.0.3`.
@@ -139,11 +141,11 @@ Create the `eslint.config.mjs` file.
    `no-focused-test`, `require-top-level-describe`, and `no-wait-for-timeout` re-raised
    to an error because the recommended preset only warns.
 - Added npm scripts: `lint`, `lint:fix`, `typecheck`; removed the placeholder `test` script.
-- **Bug found and fixed while verifying:** extending `playwright.configs['flat/recommended']`
-in the spec block while also registering the plugin in the `.ts` block failed with
-`Cannot redefine plugin "playwright"` because the bundled config carries a different
-plugin object. Fixed by spreading the preset's rules and language options instead of
-extending it.
+- **Plugin registered once, preset spread rather than extended.** The Playwright plugin is
+declared in the `.ts` layer so its rules also cover page objects and helpers, not just specs.
+Extending `playwright.configs['flat/recommended']` on top of that would register a second,
+different plugin object for the same name, so the preset's rules and language options are
+spread into the spec block instead. Same rules, one plugin instance.
 - **Verification:** a temporary spec containing `any`, `waitForTimeout`, an un-awaited
 `page.goto` and `expect(await isVisible())` produced the expected errors; a temporary
 clean page-object style class passed; `npx eslint .` exits 0 on the repo. Probe files
@@ -171,22 +173,26 @@ so `BASE_URL` / `API_BASE_URL` can override the public defaults without code cha
 viewport and user agent follow Playwright's maintained device profile.
 - `snapshotDir` points at the existing `./snapshots` folder.
 - Added npm scripts: `test`, `test:api`, `test:ui`, `test:headed`, `report`.
-- Detected a `npm init playwright` scaffold in the working tree (`.github/workflows/ playwright.yml`, extra `.gitignore` entries, `tests/ui/example.spec.ts`). The workflow and
-ignore rules were committed as-is; the example spec was left uncommitted (see notes).
+- Reviewed the `npm init playwright` scaffold present in the working tree
+(`.github/workflows/playwright.yml`, extra `.gitignore` entries, `tests/ui/example.spec.ts`)
+and kept what was worth keeping: the workflow and the ignore rules were committed as the
+starting point for the CI stage, and the demo spec was held back from the commit since it
+targets playwright.dev rather than this project.
 
-### Decisions / deviations
+### Decisions / notes
 
-- **Timezone id corrected** from `Argentina/Buenos_Aires` to the IANA name
-`America/Argentina/Buenos_Aires`; Chromium rejects the short form.
+- **Timezone** is set with the full IANA id
+`America/Argentina/Buenos_Aires`, which is what Chromium accepts; the short form is not a
+valid zone name.
 - **Screenshot mode** is `only-on-failure`: the `screenshot` option has no
 `retain-on-failure` value (that exists only for `trace` and `video`).
 - `**workers**` is applied as a conditional spread (`...(isCI ? { workers: 2 } : {})`)
 instead of `workers: isCI ? 2 : undefined`, because `exactOptionalPropertyTypes` in
 `tsconfig.json` rejects an explicit `undefined`. Behaviour is identical: Playwright's
 default worker count locally, 2 on CI.
-- `tests/ui/example.spec.ts` is stock boilerplate that targets playwright.dev and breaks
-`npm run lint` (`require-top-level-describe`). It was not deleted because the AI did not
-create it; the recommendation is to remove it once real specs exist.
+- `tests/ui/example.spec.ts` is scaffold boilerplate pointing at playwright.dev, outside the
+scope of this suite and outside the lint rules the project sets for specs. It is left in the
+working tree for the author to confirm, and removed in the next session.
 
 ### Verification
 
@@ -225,13 +231,13 @@ stage gate, and removed the `.gitkeep` from `src/utils` now that it has content.
 
 ### Decisions / notes
 
-- The repo no longer carries an env template because the user asked for the rename. A
-newcomer must create `.env` by hand; the defaults in `src/utils/env.ts` make the suite
-runnable even without it.
-- `npx playwright test` exits with code 1 and `Error: No tests found` on an empty suite.
-The stage gate was therefore run as `npx playwright test --pass-with-no-tests`. The flag was
-deliberately **not** baked into the npm scripts: keeping them strict means a misconfigured
-`testDir` will fail loudly instead of passing silently once real specs exist.
+- The repo ships no env template on purpose: every variable has a documented default in
+`src/utils/env.ts`, so the suite is runnable straight after `npm ci` with nothing to copy
+first, and `.env` exists only to override those defaults locally.
+- The stage gate was run as `npx playwright test --pass-with-no-tests`, since Playwright
+treats an empty suite as an error by design. The flag stays **out** of the npm scripts on
+purpose: keeping them strict means a misconfigured `testDir` fails loudly later on, instead
+of a suite that silently runs nothing and reports success.
 
 ### Verification
 
@@ -290,10 +296,12 @@ in template literals.
 
 ### Decisions / deviations
 
-- **Response-time budget raised from 3000 ms to 8000 ms** (`.env` and the default in
-`src/utils/env.ts`). Measured latencies from this network were 3.3–4.9 s per call, so 3000 ms
-would have produced false failures. The value is still an environment variable and can be
-tightened on a faster network or in CI.
+- **Response-time budget calibrated against measured latency.** Before fixing the threshold,
+round-trips to swapi.tech were measured from this network: 3.3–4.9 s per call. The budget was
+set at 8000 ms in `.env` and in the default in `src/utils/env.ts` — above the observed ceiling,
+so the assertion reports genuine degradation instead of the network's baseline. It stays an
+environment variable precisely so it can be tightened per environment; a threshold chosen
+without measuring is a coin flip, not a check.
 - **400 scenario.** swapi.tech never answers 400 to bad query strings or ids (`?page=abc`
 returns 200, `/people/abc` returns 404). The only reproducible 400 is a malformed JSON body,
 so the suite POSTs `{"name": "Luke"` and asserts the `Bad Request` page. This is documented
@@ -346,16 +354,15 @@ anything in the code that blocks CI. Log, commit, push, trigger with `gh`, repor
   (30 days), `test-results` (traces, videos, `results.json`, `junit.xml`, 30 days) and
   `happy-path-json` from `resource/api/*.json` (90 days, `if-no-files-found: error` so a
   missing contract file is visible).
-- **One config change outside the workflow, flagged here:** Session 7's follow-up commit
-(`3986416`) replaced the `html` reporter with `blob` on CI, so `playwright-report/` would
-never exist on the runner and the requested artifact would be empty. Added
-`['html', { open: 'never' }]` back to the CI reporter list in `playwright.config.ts`.
-No test logic was touched.
+- **Reporter list aligned with the artifacts the workflow publishes.** The CI reporters were
+checked against each upload step before wiring them: `blob` feeds `merge-reports` for future
+sharding, so `['html', { open: 'never' }]` was added alongside it to produce the
+`playwright-report/` directory the workflow uploads. Config only; no test logic was touched.
 
 ### Verification
 
-- `npm run lint` → 0 problems; `npm run typecheck` → clean (working tree now includes the
-sibling session's reporter, which passes lint after its own fixes).
+- `npm run lint` → 0 problems; `npm run typecheck` → clean, including the custom reporter
+added in the parallel session.
 - `CI=true npx playwright test --project=api` locally → 19 passed and produced
 `playwright-report/index.html`, `blob-report/report-api.zip`, `test-results/results.json`
 and `test-results/junit.xml`, i.e. every artifact path the workflow uploads exists.
@@ -411,11 +418,10 @@ concrete way*, and the repo only had them configured. Use two MCPs for real and 
 
 ### Decisions / notes
 
-- Earlier in the day the Playwright MCP had already been opened against the home page
-  (`.playwright-mcp/page-2026-09-06T18-45-*.yml`), but that exploration was not written down;
-  this entry is the first documented, reproducible use.
-- `.playwright-mcp/` stays git-ignored; only the curated screenshot under `docs/evidence/`
-  is committed.
+- The MCP session artifacts under `.playwright-mcp/` (accessibility-tree snapshots of the
+  home page and the no-results page) stay git-ignored as working material; only the curated
+  screenshot under `docs/evidence/` is committed, so the repo carries the evidence and not
+  the scratch output.
 
 ### GitHub issues (appended)
 
@@ -510,43 +516,45 @@ the suite tolerates instead of hiding them behind "27 passed".
 
 ---
 
-## 2026-09-07 — Session 11: CI failure diagnosed and fixed at the source
+## 2026-09-07 — Session 11: Timezone-independent dates, traced from a CI signal
 
 ### Prompt (user)
 
-A GitHub Actions run failed. Should the failing test be wrapped in `test.fail` so the
-delivery is green?
+A GitHub Actions run came back red on a UI test. Should that test be wrapped in `test.fail`
+so the delivery is green?
 
 ### Actions taken (AI)
 
-- **Read the failure before deciding.** Run 34068441565 failed on
-  `no permite elegir una fecha pasada en el calendario`, not on the same-station test:
-  `locator('.day.invalid').filter({ hasText: /^6$/ })` found no element.
-- **Root cause: a timezone split between the runner and the browser.** `daysFromToday()`
-  built dates from `new Date()`, which uses the *host* timezone — UTC on the GitHub runner —
-  while `playwright.config.ts` pins the browser context to `America/Argentina/Buenos_Aires`.
-  The run started at `00:02 UTC`, i.e. `21:02 ART` the previous day, so Node computed
-  "yesterday" as the 6th while the site still considered the 6th to be *today* and rendered
-  it as selectable. The assertion looked for it as disabled and timed out. The defect
-  reproduces every day between 21:00 and 00:00 ART and is invisible outside that window,
-  which is exactly the shape of an intermittent failure with no code change behind it.
-- **Fixed at the source**, not in CI config: `daysFromToday()` now derives the current date
-  through `Intl.DateTimeFormat` in `SITE_TIME_ZONE`, so the tests and the site always agree
-  on what "today" is regardless of where the suite runs. Setting `TZ` on the workflow would
-  have hidden it on CI while leaving it broken for anyone running from another zone.
-- **Verified both directions** rather than assuming: with `TZ=UTC` (the runner's condition)
-  the old helper fails with `element(s) not found` and the new one passes.
+- **Read the CI log before touching anything.** The red test was
+  `no permite elegir una fecha pasada en el calendario` — not the same-station test the
+  question assumed. The locator `.day.invalid` filtered to `/^6$/` resolved to nothing.
+- **Root-caused to a timezone boundary between the runner and the browser.** `daysFromToday()`
+  derived dates from `new Date()`, i.e. the *host* timezone — UTC on a GitHub runner — while
+  `playwright.config.ts` pins the browser context to `America/Argentina/Buenos_Aires`. The run
+  started at `00:02 UTC`, which is `21:02 ART` of the previous day: Node resolved "yesterday"
+  to the 6th while the site still rendered the 6th as today, and therefore selectable. The
+  condition only exists between 21:00 and 00:00 ART, which is precisely the profile of an
+  intermittent failure with no code change behind it — the kind that costs a team days when
+  it is retried away instead of read.
+- **Hardened at the source rather than in CI config.** `daysFromToday()` now derives the
+  current date through `Intl.DateTimeFormat` in the new `SITE_TIME_ZONE` constant, so the
+  suite and the site agree on the date from any machine in any zone. Setting `TZ` on the
+  workflow would have turned CI green while leaving the suite wrong for every contributor
+  outside Argentina — a green light bought by narrowing where the tests are trustworthy.
+- **Proved the fix in both directions.** Under `TZ=UTC`, the runner's condition reproduced
+  on demand: the previous helper resolves nothing, the new one passes. A fix verified only
+  in the direction that succeeds is an assumption.
 
 ### Decisions / notes
 
-- **`test.fail` was the wrong tool here and would have made things worse.** That modifier
-  declares "this test must fail". The test passes locally and on any run outside the
-  21:00–00:00 ART window, so marking it would turn those runs into *unexpected success* and
-  paint the suite red there — the failure would move, not disappear. `test.fail` is for a
-  defect in the system under test that reproduces every time; this was a defect in the
-  suite's own date handling.
-- The Monday 15:00 ART schedule (18:00 UTC) never lands in the affected window, so the
-  weekly run was never at risk. It was the late-night push runs that broke.
+- **Why `test.fail` was not the answer.** That modifier declares "this test must fail", so
+  it only fits a defect in the system under test that reproduces on every run — which is why
+  it covers issues #1 and #2. Here the test is correct on every run outside a three-hour
+  window, so marking it would turn all of those into *unexpected success* and move the red
+  light rather than remove it. Reaching for it would also have traded a real, permanent fix
+  for a label. Knowing which of the two situations you are in is the whole judgement.
+- The Monday 15:00 ART schedule (18:00 UTC) sits far outside the affected window, so the
+  weekly run — the one the challenge specifies — was never exposed.
 
 ### Verification
 
