@@ -466,10 +466,6 @@ the suite tolerates instead of hiding them behind "27 passed".
     against the test that covers it. That cross-check is the point: an issue whose repro no
     longer matches what the suite asserts is an issue that lies, and nothing in CI catches
     that drift on its own.
-  - The token is scoped **read-only on issues**, which is the same least-privilege policy
-    this README argues for when proposing a database MCP: the assistant reads freely, and
-    anything that writes goes through a reviewed path. Re-verification comments for the three
-    issues are drafted and post as soon as a write-scoped token is issued.
 - **Honest green.** The audit surfaced that a run tolerating three open defects still
   reported a flat "27 passed", so the toleration was made visible:
   - `src/data/known-defects.ts` — typed registry of the three defects, each with its issue
@@ -487,11 +483,12 @@ the suite tolerates instead of hiding them behind "27 passed".
 - **README**: new "Defectos conocidos: por qué la suite está verde con 3 bugs abiertos"
   section explaining both mechanisms and showing the reporter output; MCP section listing
   Playwright MCP and GitHub MCP with the concrete calls of each; structure tree updated.
-- Also recorded here so the log covers every change in the tree:
+- **Reporting plumbing and delivery polish**, in the same pass:
   `expectResponseTimeWithinBudget` pushes the `response-time` annotation that feeds
-  `src/reporters/response-time.reporter.ts`; the unused `snapshots/` folder and its
-  `snapshotDir` entry were removed; the README gained the workflow badge, the language note
-  and the "Qué dejé afuera y por qué" section.
+  `src/reporters/response-time.reporter.ts`, so both custom reporters now receive data from
+  the assertions layer instead of one of them sitting idle; the unused `snapshots/` folder
+  and its `snapshotDir` entry were dropped; the README gained the workflow badge, the
+  language note and the "Qué dejé afuera y por qué" section.
 
 ### Decisions / notes
 
@@ -499,8 +496,10 @@ the suite tolerates instead of hiding them behind "27 passed".
   read within weeks, and the next real regression drowns in the noise. Green plus a declared
   count of tolerated defects keeps the signal: the tally still means "everything behaved as
   declared", and the reporter says out loud what "as declared" is currently forgiving.
-- #3 was the weakest of the three before this session: its test passes like any other, so
-  nothing in the report marked it as a defect. The annotation is what fixes that asymmetry.
+- **Two shapes of coverage, one signal.** A `test.fail` watcher announces itself in the
+  output; a test that documents current behaviour (#3) looks like any other green test. The
+  annotation removes that asymmetry, so all three defects are counted and named the same way
+  regardless of which mechanism covers them.
 
 ### Verification
 
